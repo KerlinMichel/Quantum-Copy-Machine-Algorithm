@@ -1,11 +1,14 @@
 import argparse
+import os
 
-from qca.input import create_patches, create_adjacency_matrix, save_output
+import numpy as np
+
+from qca.input import create_patches, create_adjacency_matrix, parse_input, save_output
 from qca.quantum_collapse import create_neighborhood, quantum_collapse
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--input', '-i', type=str, required=True, help='A local file path or a url')
+parser.add_argument('--input', '-i', type=str, required=True, help='A local file path, file directory, or a url')
 parser.add_argument('--patch_size', '--patchsize', type=lambda s: tuple(map(int, s.split(','))), required=True, help='CSV of numbers that specifies size of input parts. Dimension must match input dimension')
 
 parser.add_argument('--output_size', '--outputsize', type=lambda s: tuple(map(int, s.split(','))), required=True, help='Size out the output. Dimension must match the input dimension')
@@ -22,7 +25,22 @@ if args.quantum_randomness:
     import qca.decoherence
     qca.decoherence.choice = choice
 
-patches, input, input_type = create_patches(input=args.input, patch_size=args.patch_size)
+if os.path.isdir(args.input):
+    input_type = None
+
+    files = [os.path.join(args.input, f) for f in os.listdir(args.input)]
+    patches = np.zeros((len(files)), dtype=object)
+
+    for i, full_path in enumerate(files):
+        input, input_type_i = parse_input(full_path)
+        if input_type == None:
+            input_type = input_type_i
+        if input_type_i != input_type:
+            raise ValueError('Folder contains more than one type of input')
+        patches[i] = input
+else:
+    patches, input, input_type = create_patches(input=args.input, patch_size=args.patch_size)
+    patches = patches.flatten()
 
 if input_type == 'image' and len(args.patch_size) != 2:
     raise ValueError('Input is an image. Patch size must only contain 2 values.')
@@ -33,9 +51,6 @@ if input_type == 'image' and len(args.output_size) != 2:
 print('input type: ' + input_type)
 
 neighborhood = create_neighborhood(patches_shape=patches.shape, neighborhood_type='manhattan_distance_1')
-
-patches_ = patches
-patches = patches.flatten()
 
 adjacency_matrix = create_adjacency_matrix(patches, neighborhood)
 

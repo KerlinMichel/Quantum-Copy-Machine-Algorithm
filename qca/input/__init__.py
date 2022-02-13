@@ -1,7 +1,8 @@
 from typing import Tuple
+from urllib.request import urlopen
+
 import numpy as np
 from PIL import Image
-from urllib.request import urlopen
 
 def parse_image(input: str):
      if type(input) is str:
