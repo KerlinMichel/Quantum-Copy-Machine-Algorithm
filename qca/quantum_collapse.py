@@ -14,7 +14,6 @@ def quantum_collapse(
 ):
     output = np.ones((output_size + (len(states),)))
     output_curr_num_possible_states = np.full((output_size), len(states), dtype=int)
-    reverse_neighborhood_ = tuple(neighborhood.index([-n for n in nh]) for nh in neighborhood)
     output_assignments = np.full((output_size), -1, dtype=int)
 
     dechorence_selector = LowestEntropyDechorence()
@@ -42,20 +41,21 @@ def quantum_collapse(
 
                 num_possible_states_before_update = output_curr_num_possible_states[tuple(neighbor_index)]
 
-                for idx, v in enumerate(output[tuple(neighbor_index)]):
+                for neighbor_state_idx, v in enumerate(output[tuple(neighbor_index)]):
                     if v == 0:
                         continue
-                    # get all possible states based on adjacency_contraint
-                    possible_states = np.where(adjacency_contraint[idx, reverse_neighborhood_[n_i]] > 0)[0]
-                    
-                    # check to see if current possible states are possible
-                    v_possible = False
-                    for s in possible_states:
-                        if output[tuple(index)][s] > 0:
-                            v_possible = True
-                        
-                    if not v_possible:
-                        output[tuple(neighbor_index)][idx] = 0
+
+                    # loop through output part that was popped to see if neighbor states are possible based on neighborhood constraint
+                    state_is_possible = False
+                    for state_index, v_ in enumerate(output[tuple(index)]):
+                        if v_ == 0:
+                            continue
+                        if adjacency_contraint[state_index, n_i, neighbor_state_idx] == 1:
+                            state_is_possible = True
+                            break
+
+                    if not state_is_possible:
+                        output[tuple(neighbor_index)][neighbor_state_idx] = 0
                         output_curr_num_possible_states[tuple(neighbor_index)] -= 1
 
                 # possible states are zero so output is not inconsistent

@@ -69,13 +69,11 @@ correspond to two states and $j$ corresponds to some neighborhood offset is eith
 \State $C_n \gets [k][|N|][k]$
 \\
 
-\For{all entries $O[d^0]\dots[d^{D-1}][s]$ in $O$}
-    \State O[$d^0$]\dots[$d^{D-1}$][$s$] $\gets$ 1.0 \Comment{Set output parts to a superposition of all states}
-\EndFor
+\State Fill($O, 1.0$) \Comment{Set output parts to a superposition of all states}
 
 \\
 
-\While {$\nexists o_{d_0, \dots, d_{D-1}} \neq [0, \dots, 1, \dots, 0] $} \Comment{Loop until ouput fully collapses}
+\While {$\exists o_{d_0, \dots, d_{D-1}} \neq [0, \dots, 1, \dots, 0] $} \Comment{Loop until ouput fully collapses}
     \State $d_0, \dots, d_{D-1} \gets$ SelectUncollapsedOutputPart($O$)
     \State O[$d^0$]\dots[$d^{D-1}$] $\gets$ Collapse($d_0, \dots, d_{D-1}$)
     \State push($P$, ($d_0, \dots, d_{D-1}$))
@@ -83,16 +81,22 @@ correspond to two states and $j$ corresponds to some neighborhood offset is eith
         \State $v \gets$ pop($P$)
         \For{$n \in N$}
             \State shouldPropagate $\gets$ false
-            \For {s = 0 to $k - 1$}
+            \For {$s = 0$ to $k - 1$} \Comment{Check if any states in $v$ allow $s$ using $C_n$}
                 \If{O[($v + n$)][$s$] $> 0$}
-                    \If{$C_n$[O[$v$][$s$] = 1][n][s] $= 0$}
+                    \State stateIsPossible $\gets$ false
+                    \For {$s^* = 0$ to $k - 1$}
+                        \If{$C_n[s^*][n][s]$ $= 1$}
+                            \State stateIsPossible $\gets$ true
+                        \EndIf
+                    \EndFor
+                    \If{stateIsPossible $=$ false}
                         \State O[($v + n$)][$s$] $\gets 0$
                         \State shouldPropagate $\gets$ true
                     \EndIf
                 \EndIf
             \EndFor
             \If{shouldPropagate}
-                \State push($P$, ($d_0+v_0,\ \dots,\ d_{D-1}+v_{D-1}$))
+                \State push($P$, ($v + n$))
             \EndIf
         \EndFor
     \EndWhile
