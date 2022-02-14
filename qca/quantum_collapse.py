@@ -74,9 +74,9 @@ def quantum_collapse(
 
     return output_is_consistent, output_assignments, output
 
-def create_neighborhood(patches_shape, neighborhood_type='manhattan_distance_1'):
+def create_neighborhood(num_dimensions, neighborhood_type='manhattan_distance_1'):
     if neighborhood_type == 'manhattan_distance_1':
-        neighborhood = tuple([0] * len(patches_shape) for _ in range(len(patches_shape) * 2) )
+        neighborhood = tuple([0] * num_dimensions for _ in range(num_dimensions * 2))
         for idx, i in enumerate(range(0, len(neighborhood), 2)):
             neighborhood[i][idx] = 1
             neighborhood[i+1][idx] = -1
