@@ -16,13 +16,18 @@
 
 \title{Quantum Collapse Algortihm}
 \author{Kerlin Michel}
-\date{}
+\date{2022}
 \maketitle
 
+\listofalgorithms
+
 \section{Introduction}
+Creating works of art can be a laborious and tedious task. In some cases may be impossible to do so. The 3D game {\it Minecraft: Java Edition} is a game 
+where a world is created using different procedural generation algorithms. These worlds are so large that creating a world by hand would be not feasible.
+
 The \href{https://github.com/mxgmn/WaveFunctionCollapse}{Wave Function Collapse algorithm}$^1$, a texture synthesis algorithm, was made by Gumin
 and is heavily based on Merrell's \href{https://paulmerrell.org//thesis.pdf}{Model Synthesis thesis paper}$^2$. In a high level description the models
-synthesis algorithm creates an randomly generate output, image or 3d model, that locally looks similar to some input. The algorithm interprets the 
+synthesis algorithm creates an randomly generate output, image or 3D model, that locally looks similar to some input. The algorithm interprets the 
 input and output as being locally partitioned into parts. When the algorithm finishes succesfully each output part will be equal to some input part.
 The model synthesis initializes all output parts to be in state where each input part is a possible assignment. The algorithm then loops through each output part
 and randomly assign it to an input part and then possible output assignments for unassigned output parts are updated based on an adjaceny contraint. The adjaency
@@ -38,16 +43,32 @@ Merrell examines the difference between Model Synthesis and Wave Function Collap
 
 This project is meant to examine and generalize both algorithms. Implementing the algorithm using quantum computing will also be explored.
 
-\listofalgorithms
+\section{Procedural Generation}
+Creating data manually can be extremely time consuming. For example in the game {\it Minecraft} the 3D cube voxel world map is separated into chunks
+that are $16\times16\times384$ in size. If a human working at a pace of setting 4 blocks, a voxel cube, a second to a chunk then the it would take more than
+6 hours to set all the blocks in a chunk. The game contains a large number of chunks so creating a {\it Minecraft} world would be very time consuming
+and costly if a human builder was used. {\it Minecraft} uses procedural generation to create chunks so that chunks. Procedural generation can be described
+as a computational function that takes pre constructed data and probability distribution as input and gives data as the output.
+
+A common procedural generation technique is to generate an image with Perlin noise, a type of gradient noise, and use the values at each pixel
+to represent the height for 3D terrain. {\it Minecraft} randomly generates structures, such as villages where village buildings are randomly placed
+at the location of the village. {\it Minecraft} generates structures atomically meaning that the input pre constructed data, the building model, is placed
+entirely in the map and not a part of it. Villages may have unique layouts but this leads to seeing the same buildings in each village which can
+make the world feel more artificial. A possible improvement would be for the village generation process to make it so that buildings are made to look
+similar to the pre constructed buildings but allowing unique differences.
+
+\subsection{Example Based Generation}
+An example based procedural generation algorithm creates an output that is similar to the pre constructed input data. Similarly is define as
+a small part of the output having the same value or near equal value of some part of the input. 
 
 \section{Quantum Collapse Algorithhm}
-The Quantum Collapse Algorithhm randomly generates an output that is composed of parts that are local similar to some input.
+The Quantum Collapse Algorithhm randomly generates an output that is composed of parts that are locally similar to some input.
 The algorithm will assign a part in the input to a part in the output. The input parts are described by the set $S = \{s_1, \dots, s_{k-1}\}$ where k is the number
 of possible states, $k = |S|$.
 
 The output $O$ is represented by a $d_0 \times \dots \times d_{D-1} \times k$ array where D is the number of dimensions of the output and $d_i \in \mathbb{Z}^+$. 
 For images $D=2$ and for videos and 3D models $D=3$. Each output part is described by $o_{d_0, \dots, d_{D-1}}$ where is an array:
-$o_{d_0, \dots, d_{D-1}} = [O_{d_0, \dots, d_{D-1}, 0}, \ \dots, \ O_{d_0, \dots, d_{D-1}, k-1}]$. Each entry in a $o$ represents the possible states of an output part
+$O_{d_0, \dots, d_{D-1}} = [O_{d_0, \dots, d_{D-1}, 0}, \ \dots, \ O_{d_0, \dots, d_{D-1}, k-1}]$. Each entry in a $o$ represents the possible states of an output part
 where each index of corresponds to a state in $S$. If an entry in some $o$ is $> 0$ then the the state in $S$ that corresponds to the index of said entry is a possible
 assignment to the output part. The algorithm initializes each entrpy $O$ to $1$ so that all output parts, $o_{d_0, \dots, d_{D-1}}$, can be assigned any state in $S$. 
 
@@ -73,7 +94,7 @@ correspond to two states and $j$ corresponds to some neighborhood offset is eith
 
 \\
 
-\While {$\exists o_{d_0, \dots, d_{D-1}} \neq [0, \dots, 1, \dots, 0] $} \Comment{Loop until ouput fully collapses}
+\While {$\exists O_{d_0, \dots, d_{D-1}} \neq e_i$} \Comment{$e_i =$ some standard basis vector, e.g.$[0, 1, 0]$}
     \State $d_0, \dots, d_{D-1} \gets$ SelectUncollapsedOutputPart($O$)
     \State O[$d^0$]\dots[$d^{D-1}$] $\gets$ Collapse($d_0, \dots, d_{D-1}$)
     \State push($P$, ($d_0, \dots, d_{D-1}$))
@@ -81,11 +102,11 @@ correspond to two states and $j$ corresponds to some neighborhood offset is eith
         \State $v \gets$ pop($P$)
         \For{$n \in N$}
             \State shouldPropagate $\gets$ false
-            \For {$s = 0$ to $k - 1$} \Comment{Check if any states in $v$ allow $s$ using $C_n$}
-                \If{O[($v + n$)][$s$] $> 0$}
+            \For {$s = 0$ to $k - 1$} %\Comment{Update $O[v+n]$ using $C_n$ and non zero states in $v$}
+                \If{O[($v + n$)][$s$] $> 0$} \Comment{Loop allow states in $O[v+n]$}
                     \State stateIsPossible $\gets$ false
                     \For {$s^* = 0$ to $k - 1$}
-                        \If{$C_n[s^*][n][s]$ $= 1$}
+                        \If{$C_n[s^*][n][s]$ $= 1$ and $O[v][s^*] = 1$} 
                             \State stateIsPossible $\gets$ true
                         \EndIf
                     \EndFor
