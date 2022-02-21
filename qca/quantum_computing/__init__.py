@@ -18,7 +18,7 @@ def random_integer(num_bits):
     return int(result.get_memory()[0], 2)
 
 def choice(iter):
-    num_bits = math.ceil(math.log2(len(iter)))
+    num_bits = int(math.log2(len(iter))) + 1
     choice_index = -1
 
     while choice_index < 0 or choice_index >= len(iter):
