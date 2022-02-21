@@ -79,6 +79,22 @@ def create_adjacency_matrix(patches, neighborhood, type_='overlapping_boundaries
 
     return adjacency_matrix
 
+def create_neighborhood_constraint_from_example(states, example, neighborhood):
+    neighborhood_constraint = np.zeros((len(states), len(neighborhood), len(states)))
+
+    for idx, s in np.ndenumerate(example):
+        for n_idx, n in enumerate(neighborhood):
+            neighbor_index = np.array(idx)+np.array(n)
+
+            if np.any(neighbor_index < 0) or np.any(neighbor_index > np.array(example.shape) - 1):
+                    continue
+
+            neighbor_state = example[tuple(neighbor_index)]
+
+            neighborhood_constraint[np.where(states == s)[0][0], n_idx, np.where(states == neighbor_state)[0][0]] = 1
+
+    return neighborhood_constraint
+
 def save_output(file_path, output, patches, input_type):
     if input_type == 'image':
         img = Image.new("RGBA", tuple(np.array(patches[0].shape[:2]) * np.array(output.shape)))

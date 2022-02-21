@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from qca.input import create_patches, create_adjacency_matrix, parse_input, save_output
-from qca.quantum_collapse import create_neighborhood, quantum_collapse
+from qca import create_neighborhood, quantum_collapse
 
 parser = argparse.ArgumentParser()
 
@@ -18,7 +18,7 @@ parser.add_argument('--output_file', '--f', type=str, required=True, help='Outpu
 
 parser.add_argument('--quantum_randomness', '--qr', required=False, action='store_true', help='This flags enables using quantum randomness through quantum computing')
 
-parser.add_argument('--verbose', '-v', action='count', default=0, required=False)
+parser.add_argument('--verbose', '-v', action='count', default=0, required=False, help='Incremental verbose parameter. -v prints steps and elapsed time. -vv saves debug figures ')
 
 args = parser.parse_args()
 
