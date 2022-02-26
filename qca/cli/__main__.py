@@ -5,8 +5,10 @@ import time
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from qca.input import create_patches, create_adjacency_matrix, parse_input, save_output
 from qca import create_neighborhood, quantum_collapse
+from qca.collapse import BinaryCollapse
+from qca.decoherence import LowestEntropyDechorence
+from qca.input import create_patches, create_adjacency_matrix, parse_input, save_output
 
 parser = argparse.ArgumentParser()
 
@@ -24,13 +26,6 @@ args = parser.parse_args()
 
 import builtins
 print = lambda *values: builtins.print(*values) if args.verbose > 0 else None
-
-if args.quantum_randomness:
-    from qca.quantum_computing import choice
-    import qca.collapse
-    qca.collapse.choice = choice
-    import qca.decoherence
-    qca.decoherence.choice = choice
 
 if os.path.isdir(args.input):
     input_type = None
@@ -95,8 +90,17 @@ adjacency_matrix = create_adjacency_matrix(patches, neighborhood)
 
 print(f'neighborhood matrix created ({time.time() - start_time:.4f} s)')
 
+dechorence_selector = LowestEntropyDechorence()
+collapse = BinaryCollapse()
+
+if args.quantum_randomness:
+    from qca.quantum_computing import choice
+    dechorence_selector = LowestEntropyDechorence(choice=choice)
+    collapse = BinaryCollapse(choice=choice)
+
 start_time = time.time()
-success, output, _ = quantum_collapse(patches, output_size=args.output_size, adjacency_contraint=adjacency_matrix, neighborhood=neighborhood)
+success, output, _ = quantum_collapse(patches, output_size=args.output_size, adjacency_contraint=adjacency_matrix, neighborhood=neighborhood,
+                                      dechorence_selector=dechorence_selector, collapse=collapse)
 
 print(f'Done. success: {success} ({time.time() - start_time:.4f} s)')
 

@@ -11,15 +11,12 @@ def quantum_collapse(
     output_size: Tuple[int, ...],
     neighborhood,
     adjacency_contraint,
-    dechorence_selector=LowestEntropyDechorence,
-    collapsor = BinaryCollapse,
+    dechorence_selector=LowestEntropyDechorence(),
+    collapse = BinaryCollapse(),
 ):
     output = np.ones((output_size + (len(states),)))
     output_curr_num_possible_states = np.full((output_size), len(states), dtype=int)
     output_assignments = np.full((output_size), -1, dtype=int)
-
-    dechorence_selector = dechorence_selector()
-    collapse = collapsor()
 
     output_is_consistent = True
 

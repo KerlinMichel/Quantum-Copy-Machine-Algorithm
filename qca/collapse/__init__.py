@@ -3,9 +3,10 @@ from typing import Any
 import numpy as np
 import numpy.random as random
 
-choice = random.choice
-
 class BinaryCollapse():
+    def __init__(self, choice=random.choice) -> None:
+        self.choice = choice
+
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.collapse(*args, **kwds)
     
@@ -14,7 +15,7 @@ class BinaryCollapse():
         
         indices = np.where(output[index] == 1)[0]
 
-        collapse_index = choice(indices)
+        collapse_index = self.choice(indices)
 
         collapse_value = np.zeros(output.shape[-1])
         collapse_value[collapse_index] = 1

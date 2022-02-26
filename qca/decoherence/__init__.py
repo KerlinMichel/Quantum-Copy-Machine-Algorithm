@@ -3,9 +3,10 @@ from typing import Any
 
 import numpy as np
 
-choice = random.choice
-
 class LowestEntropyDechorence():
+    def __init__(self, choice=random.choice) -> None:
+        self.choice = choice
+
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.select(*args, **kwds)
 
@@ -26,6 +27,6 @@ class LowestEntropyDechorence():
             return lowest_entropies[0]
         else:
             if choose_random:
-                return choice(lowest_entropies)
+                return self.choice(lowest_entropies)
             else:
                 raise Exception('Equal number of states')
