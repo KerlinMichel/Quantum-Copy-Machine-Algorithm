@@ -2,7 +2,11 @@ docs/*
 !docs/*.tex
 !docs/*.pdf
 
-# Byte-compiled / optimized / DLL files
+# Python
+## Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+## Python Notebook
+.ipynb_checkpoints

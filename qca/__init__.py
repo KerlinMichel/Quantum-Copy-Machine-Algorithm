@@ -1,10 +1,13 @@
 from collections import deque
+from itertools import zip_longest
 from typing import Tuple
 
 import numpy as np
+from qiskit import Aer, transpile, assemble
 
 from .decoherence import LowestEntropyDechorence
 from .collapse import BinaryCollapse
+from .quantum_computing import *
 
 def quantum_collapse(
     states,
@@ -73,6 +76,61 @@ def quantum_collapse(
 
     return output_is_consistent, output_assignments, output
 
+def quantum_collapse_qc(
+    states,
+    output_size: Tuple[int, ...],
+    neighborhood,
+    neighborhood_constraint,
+    num_iterations=1,
+    max_attempts=1,
+    sim=Aer.get_backend('aer_simulator')
+):
+    output = np.ones(output_size + (len(states),))
+    output_assignments = np.full((output_size), -1, dtype=int)
+    circuit, (output_qrs, output_part_qr_mapping), (neighborhood_constraint_qrs, neighborhood_constraint_output_mapping), feasible_qr = build_quantum_collapse_algorithm_circuit(states, neighborhood, output)
+
+    set_quantum_collapse_algorithm_superposition(circuit, output_qrs)
+
+    qc_grover = build_quantum_collapse_grover_search_circuit(circuit, neighborhood_constraint, output_qrs, neighborhood_constraint_qrs, neighborhood_constraint_output_mapping, num_iterations=num_iterations, to_gate=True)
+
+    circuit.append(qc_grover, circuit.qubits)
+
+    cbits = ClassicalRegister(len(output_qrs) * output_qrs[0].size, name='cbits')
+
+    circuit.add_register(cbits)
+
+    circuit.measure(flatten([qubits for qubits in output_qrs]), cbits._bits)
+
+    for _ in range(max_attempts):
+        transpiled_qc = transpile(circuit, sim)
+        qobj = assemble(transpiled_qc)
+        result = sim.run(qobj, shots=1).result()
+
+        counts = result.get_counts()
+        value_str = list(counts.keys())[0]
+
+        # if hex string then convert to binary string
+        if 'x' in value_str:
+            value = int(value_str, 16)
+            value_str = ''.join(str(i) for i in to_binary(value, num_bits=8))
+
+        num_bits_per_state = int(len(value_str) / len(output_part_qr_mapping))
+
+        bit_group_iter = list(grouper(num_bits_per_state, value_str))
+        bit_group_iter = reversed(bit_group_iter)
+
+        for oqr_i, bits in enumerate(bit_group_iter):
+            bit_str = ''.join(bits)
+            state = int(bit_str, 2)
+
+            output_assignments[output_part_qr_mapping[oqr_i]] = state
+
+        feasible = feasible_on_neighborhood_constraint(output_assignments, neighborhood_constraint, neighborhood)
+        if feasible:
+            break
+
+    return feasible, output_assignments
+
 def create_neighborhood(num_dimensions, neighborhood_type='manhattan_distance_1'):
     if neighborhood_type == 'manhattan_distance_1':
         neighborhood = tuple([0] * num_dimensions for _ in range(num_dimensions * 2))
@@ -103,3 +161,8 @@ def feasible_on_neighborhood_constraint(output_assignments, neighborhood_constra
                 return False
 
     return True
+
+# example: grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx
+def grouper(n, iterable, fillvalue=None):
+    args = [iter(iterable)] * n
+    return zip_longest(fillvalue=fillvalue, *args)

@@ -1,11 +1,13 @@
 import argparse
+import builtins
+import math
 import os
 import time
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from qca import create_neighborhood, quantum_collapse
+from qca import create_neighborhood, quantum_collapse, quantum_collapse_qc
 from qca.collapse import BinaryCollapse
 from qca.decoherence import LowestEntropyDechorence
 from qca.input import create_patches, create_adjacency_matrix, parse_input, save_output
@@ -18,13 +20,17 @@ parser.add_argument('--patch_size', '--patchsize', type=lambda s: tuple(map(int,
 parser.add_argument('--output_size', '--outputsize', type=lambda s: tuple(map(int, s.split(','))), required=True, help='Size out the output. Dimension must match the input dimension')
 parser.add_argument('--output_file', '--f', type=str, required=True, help='Output file where generated output will be saved')
 
-parser.add_argument('--quantum_randomness', '--qr', required=False, action='store_true', help='This flags enables using quantum randomness through quantum computing')
+algorithm_mode_group = parser.add_mutually_exclusive_group(required=False)
+
+algorithm_mode_group.add_argument('--quantum_compute', '--qc', required=False, action='store_true', help='This flags enables running the quantum computing implementation of the quantum collapse algorithm using Grover\'s Search')
+
+algorithm_mode_group.add_argument('--quantum_randomness', '--qr', required=False, action='store_true', help='This flags enables using quantum randomness through quantum computing')
 
 parser.add_argument('--verbose', '-v', action='count', default=0, required=False, help='Incremental verbose parameter. -v prints steps and elapsed time. -vv saves debug figures ')
 
 args = parser.parse_args()
 
-import builtins
+# print function will only print when verbose is set above zero
 print = lambda *values: builtins.print(*values) if args.verbose > 0 else None
 
 if os.path.isdir(args.input):
@@ -99,8 +105,20 @@ if args.quantum_randomness:
     collapse = BinaryCollapse(choice=choice)
 
 start_time = time.time()
-success, output, _ = quantum_collapse(patches, output_size=args.output_size, adjacency_contraint=adjacency_matrix, neighborhood=neighborhood,
-                                      dechorence_selector=dechorence_selector, collapse=collapse)
+if args.quantum_compute:
+    # define N as the state database size and M as the number of solutions
+    # let use assume there is at least 1 solution (this isn't always true)
+    # grovers algorithm expects to find a queried state after √(N/M)
+    N = math.prod(args.output_size)**len(patches)
+    M = 1
+    num_iterations = math.ceil(math.sqrt(N/M))
+    print('Iteration Count: ', num_iterations)
+
+    success, output = quantum_collapse_qc(patches, output_size=args.output_size, neighborhood_constraint=adjacency_matrix, neighborhood=neighborhood,
+                                          num_iterations=num_iterations)
+else:
+    success, output, _ = quantum_collapse(patches, output_size=args.output_size, adjacency_contraint=adjacency_matrix, neighborhood=neighborhood,
+                                          dechorence_selector=dechorence_selector, collapse=collapse)
 
 print(f'Done. success: {success} ({time.time() - start_time:.4f} s)')
 
